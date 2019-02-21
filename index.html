@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - particles - waves</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				/*background:url(banner-in.png) no-repeat;*/
+				/*background-color: blue;*/
+				margin: 0px;
+				overflow: hidden;
+			}
+			#mydv{
+				background:url(banner-in.png) no-repeat;
+			}
+			a {
+				color:#0078ff;
+			}
+		</style>
+	</head>
+	<body>
+		
+		<div id="mydv"></div>
+			
+		
+		<script src="js/three.min.js"></script>
+
+		<script>
+
+			var SEPARATION = 100, AMOUNTX = 50, AMOUNTY = 50;
+
+			var container;
+			var camera, scene, renderer;
+
+			var particles, particle, count = 0;
+
+			var mouseX = 93, mouseY = -297.5;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			
+			var colorArr;
+			//startColor开始颜色
+			//endColor结束颜色
+			//step生成的颜色个数
+			function gradientColor(startColor, endColor, step) {
+		        startRGB = this.colorRgb(startColor);//转换为rgb数组模式
+		        startR = startRGB[0];
+		        startG = startRGB[1];
+		        startB = startRGB[2];
+		
+		        endRGB = this.colorRgb(endColor);
+		        endR = endRGB[0];
+		        endG = endRGB[1];
+		        endB = endRGB[2];
+		
+		        sR = (endR - startR) / step;//总差值
+		        sG = (endG - startG) / step;
+		        sB = (endB - startB) / step;
+		
+		        var colorArr = [];
+		        for (var i = 0; i < step; i++) {
+		            //计算每一步的hex值 
+		            var hex = this.colorHex('rgb('+ parseInt((sR * i + startR))+ ',' + parseInt((sG * i + startG))+ ',' + parseInt((sB * i + startB)) + ')');
+		            colorArr.push(hex);
+		        }
+		        return colorArr;
+		    }
+			// 将hex表示方式转换为rgb表示方式(这里返回rgb数组模式)
+		    gradientColor.prototype.colorRgb = function (sColor) {
+		        var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+		        var sColor = sColor.toLowerCase();
+		        if (sColor && reg.test(sColor)) {
+		            if (sColor.length === 4) {
+		                var sColorNew = "#";
+		                for (var i = 1; i < 4; i += 1) {
+		                    sColorNew += sColor.slice(i, i + 1).concat(sColor.slice(i, i + 1));
+		                }
+		                sColor = sColorNew;
+		            }
+		            //处理六位的颜色值
+		            var sColorChange = [];
+		            for (var i = 1; i < 7; i += 2) {
+		                sColorChange.push(parseInt("0x" + sColor.slice(i, i + 2)));
+		            }
+		            return sColorChange;
+		        } else {
+		            return sColor;
+		        }
+		    };
+		    // 将rgb表示方式转换为hex表示方式
+		    gradientColor.prototype.colorHex = function (rgb) {
+		        var _this = rgb;
+		        var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+		        if (/^(rgb|RGB)/.test(_this)) {
+		            var aColor = _this.replace(/(?:(|)|rgb|RGB)*/g, "").split(",");
+		            var strHex = "#";
+		            for (var i = 0; i < aColor.length; i++) {
+		                var hex = Number(aColor[i]).toString(16);
+		                hex = hex < 10 ? 0 + '' + hex : hex;// 保证每个rgb的值为2位
+		                if (hex === "0") {
+		                    hex += hex;
+		                }
+		                strHex += hex;
+		            }
+		            if (strHex.length !== 7) {
+		                strHex = _this;
+		            }
+		            return strHex;
+		        } else if (reg.test(_this)) {
+		            var aNum = _this.replace(/#/, "").split("");
+		            if (aNum.length === 6) {
+		                return _this;
+		            } else if (aNum.length === 3) {
+		                var numHex = "#";
+		                for (var i = 0; i < aNum.length; i += 1) {
+		                    numHex += (aNum[i] + aNum[i]);
+		                }
+		                return numHex;
+		            }
+		        } else {
+		            return _this;
+		        }
+		    }
+			
+			init();
+			animate();
+
+			function init() {
+
+				container = document.getElementById('mydv');// document.createElement( 'div' );
+//				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / 200, 1, 10000 );
+				camera.position.z = 1000;
+
+				scene = new THREE.Scene();
+
+				particles = new Array();
+				//生成颜色数组
+				colorArr = new gradientColor('#7a33c0','#0755bd',AMOUNTX);
+
+				var PI2 = Math.PI * 2;
+//				var material = new THREE.ParticleCanvasMaterial( {
+//					color: 'rgb(122,51,192)',
+////					color: getRandomColor(),
+//					program: function ( context ) {
+//						context.beginPath();
+//						context.arc( 0, 0, 1, 0, PI2, true );
+//						context.fill();
+//					}
+//				} );
+
+				var i = 0;
+
+				for ( var ix = 0; ix < AMOUNTX; ix ++ ) {
+					//在循环中重新生成粒子的材质配置
+					var material = new THREE.ParticleCanvasMaterial( {
+						color: colorArr[ix],//把生成好的颜色数组依次配置
+	//					color: getRandomColor(),
+						program: function ( context ) {
+							context.beginPath();
+							context.arc( 0, 0, 1, 0, PI2, true );
+							context.fill();
+						}
+					} );
+					for ( var iy = 0; iy < AMOUNTY; iy ++ ) {
+
+						particle = particles[ i ++ ] = new THREE.Particle( material );
+						particle.position.x = ix * SEPARATION - ( ( AMOUNTX * SEPARATION ) / 2 );
+						particle.position.z = iy * SEPARATION - ( ( AMOUNTY * SEPARATION ) / 2 );
+						scene.add( particle );
+						
+					}
+
+				}
+
+				renderer = new THREE.CanvasRenderer();
+				renderer.setSize( window.innerWidth, 400 );
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = 200 / 2 ;// window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / 200;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, 200 );
+
+			}
+	        function getRandomColor() {
+
+	            var r = 255*Math.random()|0,
+	                g = 255*Math.random()|0,
+	                b = 255*Math.random()|0;
+//	               var r = 255 * 255 | 0;
+//	               var g = 255 * 180 | 0;
+//	               var b = 255 * 0 | 0;
+	             console.log( parseInt(r, 16) );
+	            var result = '0x' + parseInt(r, 16) + parseInt(g, 16) + parseInt( b, 16) ;
+//	            return '#7a33c0';//122 51 192
+//	            return '#0755bd';// 7 85 189
+	            return result;
+	        }
+	        
+			
+			function onDocumentMouseMove( event ) {
+//				console.log('mouseX:'+mouseX);
+//				console.log('mouseY:'+mouseY);
+//				mouseX = event.clientX - windowHalfX;
+//				mouseY = event.clientY - windowHalfY;
+//
+			}
+
+			function onDocumentTouchStart( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+
+				}
+
+			}
+
+			function onDocumentTouchMove( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+
+				}
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+
+			}
+
+			function render() {
+
+				camera.position.x += ( mouseX - camera.position.x ) * .05;
+				camera.position.y += ( - mouseY - camera.position.y ) * .05;
+				camera.lookAt( scene.position );
+
+				var i = 0;
+
+				for ( var ix = 0; ix < AMOUNTX; ix ++ ) {
+
+					for ( var iy = 0; iy < AMOUNTY; iy ++ ) {
+
+						particle = particles[ i++ ];
+						particle.position.y = ( Math.sin( ( ix + count ) * 0.3 ) * 50 ) + ( Math.sin( ( iy + count ) * 0.5 ) * 50 );
+						particle.scale.x = particle.scale.y = ( Math.sin( ( ix + count ) * 0.3 ) + 1 ) * 2 + ( Math.sin( ( iy + count ) * 0.5 ) + 1 ) * 2;
+
+					}
+
+				}
+
+				renderer.render( scene, camera );
+
+				count += 0.1;
+
+			}
+
+		</script>
+	</body>
+</html>
