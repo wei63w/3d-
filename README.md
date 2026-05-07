@@ -1,3 +1,17 @@
 # 3d-
-3d 粒子颜色渐变
-![示意图](https://github.com/wei63w/3d-/blob/master/pic.png)
+
+## 项目简介
+一个静态网页示例，入口文件为 index.html。
+
+## 目录
+- `banner-in.png`
+- `index.html`
+- `js`
+- `pic.png`
+- `README.md`
+
+## 快速开始
+直接在浏览器中打开 `index.html`。
+
+## 说明
+- 这是一个静态前端示例，通常不需要额外构建步骤。
